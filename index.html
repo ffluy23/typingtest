@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cyber Typewriter</title>
+
+<style>
+:root{
+  --bg:#070a12;
+  --fg:#a9ffef;
+  --accent:#00ffd5;
+  --glow: 0 0 8px rgba(0,255,213,.55), 0 0 24px rgba(0,255,213,.25);
+}
+
+html,body{height:100%;}
+body{
+  margin:0;
+  display:grid;
+  place-items:center;
+  background: radial-gradient(1200px 800px at 20% 10%, #0b1633 0%, var(--bg) 55%);
+  color:var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  overflow:hidden;
+}
+
+.terminal{
+  width:min(900px, 92vw);
+  padding:28px 24px;
+  border:1px solid rgba(0,255,213,.25);
+  border-radius:14px;
+  background: rgba(2,6,18,.55);
+  box-shadow: 0 10px 35px rgba(0,0,0,.55), var(--glow);
+  position:relative;
+}
+
+/* 스캔라인 */
+.terminal::before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0,255,213,.06) 0px,
+      rgba(0,255,213,.06) 1px,
+      rgba(0,0,0,0) 3px,
+      rgba(0,0,0,0) 6px
+    );
+  mix-blend-mode: overlay;
+  opacity:.35;
+  pointer-events:none;
+  border-radius:14px;
+}
+
+.line{
+  position:relative;
+  font-size: clamp(16px, 2.2vw, 22px);
+  line-height:1.65;
+  text-shadow: var(--glow);
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+
+.cursor{
+  display:inline-block;
+  width: 10px;
+  margin-left: 2px;
+  transform: translateY(2px);
+  border-bottom: 2px solid var(--accent);
+  animation: blink .9s steps(1) infinite;
+}
+@keyframes blink{ 50%{ opacity:0; } }
+
+/* 글리치 */
+.glitch{
+  position:relative;
+  display:inline-block;
+}
+.glitch::before,
+.glitch::after{
+  content: attr(data-text);
+  position:absolute;
+  left:0; top:0;
+  width:100%;
+  overflow:hidden;
+  opacity:.65;
+}
+.glitch::before{
+  transform: translateX(-1px);
+  color:#ff4fd8;
+  clip-path: inset(0 0 55% 0);
+}
+.glitch::after{
+  transform: translateX(1px);
+  color:#4d7dff;
+  clip-path: inset(55% 0 0 0);
+}
+</style>
+</head>
+
+<body>
+<div class="terminal">
+  <div class="line" id="out"></div><span class="cursor"></span>
+</div>
+
+<script>
+const text = `
+>>> CONNECTING TO /net/sector-07 ...
+>>> HANDSHAKE: OK
+
+안녕. 여긴 사이버 터미널이야.
+타닥... 타닥... 글자가 찍히지?
+
+SYSTEM: { status: "stable", latency: 12ms }
+`.trim();
+
+const minDelay = 20;
+const maxDelay = 55;
+const extraPause = 200;
+const glitchChance = 0.08;
+
+const out = document.getElementById("out");
+let i = 0;
+
+function rand(min,max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+function render(){
+  if(i >= text.length) return;
+
+  const ch = text[i];
+  i++;
+
+  const raw = text.slice(0,i)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+
+  let html;
+
+  if(Math.random() < glitchChance && ch.trim() !== ""){
+    const last = raw[raw.length-1];
+    const head = raw.slice(0,-1);
+    html = (head + `<span class="glitch" data-text="${last}">${last}</span>`)
+      .replace(/\n/g,"<br>");
+  } else {
+    html = raw.replace(/\n/g,"<br>");
+  }
+
+  out.innerHTML = html;
+
+  let delay = rand(minDelay,maxDelay);
+  if(ch === "\n" || [".",",","!","?",":",";"].includes(ch))
+    delay += extraPause;
+
+  setTimeout(render, delay);
+}
+
+render();
+</script>
+</body>
+</html>
